@@ -28,6 +28,7 @@ Denom是一个基于Web3技术的股票代币协议应用，支持质押股票�
 - **实时数据**: 动态更新协议指标
 
 
+
 ## 🚀 快速开始
 
 ```bash
@@ -36,6 +37,13 @@ npx http-server frontend -p 3000 -o
 
 # 或者使用项目脚本
 npm start
+```
+
+### 配置  
+```
+PRIVATE_KEY=01c7939dc6827ee10bb7d26f420618c4af88c0029aa70be202f1ca7f29fe5bb4
+REDDIO_RPC_URL=https://reddio-dev.reddio.com/
+REDDIO_CHAIN_ID=50341
 ```
 
 ## 🌐 访问应用
