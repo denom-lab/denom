@@ -28,15 +28,16 @@
     font-size: 1.1rem;
 }
 
-.holding-item .token-custodian {
-    color: #8b5cf6;
+.holding-item .token-protocol {
+    color: #059669;
     font-size: 0.9rem;
     font-weight: 500;
-    background: rgba(139, 92, 246, 0.1);
+    background: rgba(5, 150, 105, 0.1);
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
     text-align: center;
     align-self: center;
+    border: 1px solid rgba(5, 150, 105, 0.2);
 }
 
 .holding-item .token-price {

@@ -91,28 +91,29 @@ class MintingModule {
                 holdingsList.innerHTML = '';
                 let totalValue = 0;
 
-                                                                        holdings.forEach(holding => {
-                                    if (holding.amount > 0) {
-                                        const holdingItem = document.createElement('div');
-                                        holdingItem.className = 'holding-item';
-                                        holdingItem.innerHTML = `
-                                            <span class="token-name">${holding.token}</span>
-                                            <span class="token-price" data-price="${holding.price}" data-change="${holding.priceChange}">
-                                                单价: $<span class="price-value">${holding.price.toFixed(2)}</span>
-                                                <span class="price-change ${holding.priceChange >= 0 ? 'positive' : 'negative'}">
-                                                    ${holding.priceChange >= 0 ? '+' : ''}${holding.priceChange}%
-                                                </span>
-                                            </span>
-                                            <span class="token-amount">数量: ${holding.amount.toFixed(2)}</span>
-                                            <span class="token-value">$${holding.value.toLocaleString()}</span>
-                                        `;
-                                        holdingsList.appendChild(holdingItem);
-                                        totalValue += holding.value;
-                                        
-                                        // 启动价格动画
-                                        this.startPriceAnimation(holdingItem.querySelector('.price-value'), holding.price, holding.priceChange);
-                                    }
-                                });
+                                                                                                                holdings.forEach(holding => {
+                                            if (holding.amount > 0) {
+                                                const holdingItem = document.createElement('div');
+                                                holdingItem.className = 'holding-item';
+                                                holdingItem.innerHTML = `
+                                                    <span class="token-name">${holding.token}</span>
+                                                    <span class="token-protocol">RWA协议: ${holding.protocol}</span>
+                                                    <span class="token-price" data-price="${holding.price}" data-change="${holding.priceChange}">
+                                                        单价: $<span class="price-value">${holding.price.toFixed(2)}</span>
+                                                        <span class="price-change ${holding.priceChange >= 0 ? 'positive' : 'negative'}">
+                                                            ${holding.priceChange >= 0 ? '+' : ''}${holding.priceChange}%
+                                                        </span>
+                                                    </span>
+                                                    <span class="token-amount">数量: ${holding.amount.toFixed(2)}</span>
+                                                    <span class="token-value">$${holding.value.toLocaleString()}</span>
+                                                `;
+                                                holdingsList.appendChild(holdingItem);
+                                                totalValue += holding.value;
+                                                
+                                                // 启动价格动画
+                                                this.startPriceAnimation(holdingItem.querySelector('.price-value'), holding.price, holding.priceChange);
+                                            }
+                                        });
 
                 if (totalValueEl) {
                     totalValueEl.textContent = totalValue.toLocaleString();
@@ -161,31 +162,36 @@ class MintingModule {
                 amount: 100.5, 
                 price: 150.00, // 单价
                 value: 15075.75, 
-                priceChange: 2.5 // 价格变化百分比
+                priceChange: 2.5, // 价格变化百分比
+                protocol: 'StableStocks'
             },
             { 
                 token: 'tGOOGL', 
                 amount: 25.0, 
                 price: 150.00, 
                 value: 3750.00, 
-                priceChange: -1.2
+                priceChange: -1.2,
+                protocol: 'XStocks'
             },
             { 
                 token: 'tMSFT', 
                 amount: 50.0, 
                 price: 375.00, 
                 value: 18750.00, 
-                priceChange: 0.8
+                priceChange: 0.8,
+                protocol: 'StableStocks'
             }
         ];
     }
 
     async handleStake() {
+        const stakingProtocol = document.getElementById('staking-protocol');
         const stakingToken = document.getElementById('staking-token');
         const stakingAmount = document.getElementById('staking-amount');
         
-        if (!stakingToken || !stakingAmount) return;
+        if (!stakingProtocol || !stakingToken || !stakingAmount) return;
 
+        const protocol = stakingProtocol.value;
         const token = stakingToken.value;
         const amount = parseFloat(stakingAmount.value);
 
@@ -198,9 +204,9 @@ class MintingModule {
             this.showLoading(true);
             
             // 模拟质押操作
-            await this.simulateStake(token, amount);
+            await this.simulateStake(token, amount, protocol);
             
-            this.showMessage(`成功质押 ${amount} ${token}`, 'success');
+            this.showMessage(`成功质押 ${amount} ${token} 到 ${protocol}`, 'success');
             this.updateHoldingsDisplay();
             this.updateMintableAmount();
             this.updateStakingForm();
@@ -342,10 +348,10 @@ class MintingModule {
     }
 
     // 模拟操作函数
-    async simulateStake(token, amount) {
+    async simulateStake(token, amount, protocol) {
         return new Promise((resolve) => {
             setTimeout(() => {
-                console.log(`模拟质押 ${amount} ${token}`);
+                console.log(`模拟质押 ${amount} ${token} 到 ${protocol}`);
                 
                 // 更新模拟持仓数据
                 const holdings = this.getMockHoldings();
@@ -362,7 +368,8 @@ class MintingModule {
                         amount: amount,
                         price: newPrice,
                         value: amount * newPrice,
-                        priceChange: 0
+                        priceChange: 0,
+                        protocol: protocol
                     });
                 }
                 
