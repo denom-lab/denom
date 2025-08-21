@@ -97,7 +97,6 @@ class MintingModule {
                                                 holdingItem.className = 'holding-item';
                                                 holdingItem.innerHTML = `
                                                     <span class="token-name">${holding.token}</span>
-                                                    <span class="token-protocol">RWA协议: ${holding.protocol}</span>
                                                     <span class="token-price" data-price="${holding.price}" data-change="${holding.priceChange}">
                                                         单价: $<span class="price-value">${holding.price.toFixed(2)}</span>
                                                         <span class="price-change ${holding.priceChange >= 0 ? 'positive' : 'negative'}">
@@ -163,7 +162,6 @@ class MintingModule {
                 price: 150.00, // 单价
                 value: 15075.75, 
                 priceChange: 2.5, // 价格变化百分比
-                protocol: 'StableStocks'
             },
             { 
                 token: 'tGOOGL', 
@@ -171,7 +169,6 @@ class MintingModule {
                 price: 150.00, 
                 value: 3750.00, 
                 priceChange: -1.2,
-                protocol: 'XStocks'
             },
             { 
                 token: 'tMSFT', 
@@ -179,7 +176,6 @@ class MintingModule {
                 price: 375.00, 
                 value: 18750.00, 
                 priceChange: 0.8,
-                protocol: 'StableStocks'
             }
         ];
     }
