@@ -25,6 +25,11 @@
                     <button class="nav-tab" data-tab="protocol">协议信息</button>
                 </nav>
                 <div class="wallet-connect">
+                    <select id="wallet-selector" class="wallet-selector">
+                        <option value="metamask">MetaMask</option>
+                        <option value="okx">OKX Wallet</option>
+                        <option value="auto">自动检测</option>
+                    </select>
                     <button id="connect-wallet" class="connect-btn">
                         <i class="fas fa-wallet"></i>
                         连接钱包

@@ -14,12 +14,33 @@
 
 .holding-item {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.75rem;
+    flex-direction: column;
+    padding: 1rem;
     background: rgba(102, 126, 234, 0.1);
     border-radius: 8px;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
+    gap: 0.5rem;
+}
+
+.holding-item .token-name {
+    font-weight: 600;
+    color: #667eea;
+    font-size: 1.1rem;
+}
+
+.holding-item .token-amount {
+    color: #666;
+    font-size: 1rem;
+}
+
+.holding-item .token-value {
+    font-weight: 600;
+    color: #10b981;
+    font-size: 1.1rem;
+    text-align: center;
+    padding: 0.5rem;
+    background: rgba(16, 185, 129, 0.1);
+    border-radius: 6px;
 }
 
 .token-name {
@@ -29,19 +50,25 @@
 
 .token-amount {
     color: #666;
+    font-size: 0.9rem;
 }
 
 .token-value {
     font-weight: 600;
     color: #10b981;
+    font-size: 1rem;
 }
 
 .total-value {
     text-align: center;
-    padding: 1rem;
+    padding: 1.5rem;
     background: rgba(16, 185, 129, 0.1);
     border-radius: 8px;
     color: #10b981;
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-top: 1rem;
+    border: 2px solid rgba(16, 185, 129, 0.2);
 }
 
 /* 铸造卡片 */

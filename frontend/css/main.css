@@ -110,6 +110,22 @@ body {
     box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
+/* 钱包选择器样式 */
+.wallet-selector {
+    padding: 0.5rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    background: white;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: border-color 0.3s ease;
+}
+
+.wallet-selector:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
 /* 钱包连接状态样式 */
 .wallet-connect {
     display: flex;

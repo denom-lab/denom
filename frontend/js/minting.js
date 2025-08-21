@@ -89,7 +89,7 @@ class MintingModule {
                     holdingItem.className = 'holding-item';
                     holdingItem.innerHTML = `
                         <span class="token-name">${holding.token}</span>
-                        <span class="token-amount">${holding.amount.toFixed(2)}</span>
+                        <span class="token-amount">数量: ${holding.amount.toFixed(2)}</span>
                         <span class="token-value">$${holding.value.toLocaleString()}</span>
                     `;
                     holdingsList.appendChild(holdingItem);
