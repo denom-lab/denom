@@ -2,6 +2,14 @@
 
 class MintingModule {
     constructor() {
+        // 从配置文件获取合约配置
+        this.contractConfig = {
+            contractAddress: window.CONTRACT_CONFIG?.contractAddress || '',
+            rpcUrl: window.CONTRACT_CONFIG?.rpcUrl || '',
+            chainId: window.CONTRACT_CONFIG?.chainId || '',
+            abi: window.CONTRACT_CONFIG?.abi || []
+        };
+        
         this.init();
     }
 
@@ -75,53 +83,104 @@ class MintingModule {
 
     updateHoldingsDisplay() {
         // 更新持仓显示
-        const holdings = this.getMockHoldings();
-        const holdingsList = document.getElementById('holdings-list');
-        const totalValueEl = document.getElementById('total-holdings-value');
-        
-        if (holdingsList) {
-            holdingsList.innerHTML = '';
-            let totalValue = 0;
+        this.getHoldingsFromContract().then(holdings => {
+            const holdingsList = document.getElementById('holdings-list');
+            const totalValueEl = document.getElementById('total-holdings-value');
+            
+            if (holdingsList) {
+                holdingsList.innerHTML = '';
+                let totalValue = 0;
 
-            holdings.forEach(holding => {
-                if (holding.amount > 0) {
-                    const holdingItem = document.createElement('div');
-                    holdingItem.className = 'holding-item';
-                    holdingItem.innerHTML = `
-                        <span class="token-name">${holding.token}</span>
-                        <span class="token-custodian">代持方: ${holding.custodian}</span>
-                        <span class="token-amount">数量: ${holding.amount.toFixed(2)}</span>
-                        <span class="token-value">$${holding.value.toLocaleString()}</span>
-                    `;
-                    holdingsList.appendChild(holdingItem);
-                    totalValue += holding.value;
+                                        holdings.forEach(holding => {
+                            if (holding.amount > 0) {
+                                const holdingItem = document.createElement('div');
+                                holdingItem.className = 'holding-item';
+                                holdingItem.innerHTML = `
+                                    <span class="token-name">${holding.token}</span>
+                                    <span class="token-custodian">代持方: ${holding.custodian}</span>
+                                    <span class="token-price" data-price="${holding.price}" data-change="${holding.priceChange}">
+                                        单价: $<span class="price-value">${holding.price.toFixed(2)}</span>
+                                        <span class="price-change ${holding.priceChange >= 0 ? 'positive' : 'negative'}">
+                                            ${holding.priceChange >= 0 ? '+' : ''}${holding.priceChange}%
+                                        </span>
+                                    </span>
+                                    <span class="token-amount">数量: ${holding.amount.toFixed(2)}</span>
+                                    <span class="token-value">$${holding.value.toLocaleString()}</span>
+                                `;
+                                holdingsList.appendChild(holdingItem);
+                                totalValue += holding.value;
+                                
+                                // 启动价格动画
+                                this.startPriceAnimation(holdingItem.querySelector('.price-value'), holding.price, holding.priceChange);
+                            }
+                        });
+
+                if (totalValueEl) {
+                    totalValueEl.textContent = totalValue.toLocaleString();
                 }
-            });
-
-            if (totalValueEl) {
-                totalValueEl.textContent = totalValue.toLocaleString();
             }
-        }
+        });
     }
 
     updateMintableAmount() {
         // 更新可铸造数量
-        const holdings = this.getMockHoldings();
-        const totalValue = holdings.reduce((sum, holding) => sum + holding.value, 0);
-        const mintableAmount = totalValue * 0.7; // 70% 质押率
+        this.getHoldingsFromContract().then(holdings => {
+            const totalValue = holdings.reduce((sum, holding) => sum + holding.value, 0);
+            const mintableAmount = totalValue * 0.7; // 70% 质押率
 
-        const mintableEl = document.getElementById('mintable-amount');
-        if (mintableEl) {
-            mintableEl.textContent = mintableAmount.toLocaleString();
+            const mintableEl = document.getElementById('mintable-amount');
+            if (mintableEl) {
+                mintableEl.textContent = mintableAmount.toLocaleString();
+            }
+        });
+    }
+
+    async getHoldingsFromContract() {
+        // 从合约获取持仓数据
+        if (!this.contractConfig.contractAddress || !this.contractConfig.rpcUrl) {
+            console.log('合约配置未完成，使用模拟数据');
+            return this.getMockHoldings();
+        }
+
+        try {
+            // 这里应该调用智能合约方法获取持仓数据
+            // 示例：const holdings = await contract.methods.getUserHoldings(userAddress).call();
+            
+            // 暂时返回模拟数据，实际应用中替换为合约调用
+            return this.getMockHoldings();
+        } catch (error) {
+            console.error('从合约获取持仓数据失败:', error);
+            return this.getMockHoldings();
         }
     }
 
     getMockHoldings() {
-        // 模拟持仓数据
+        // 模拟持仓数据 - 包含单价信息
         return [
-            { token: 'tAAPL', amount: 100.5, value: 15075.75, custodian: 'StableStocks' },
-            { token: 'tGOOGL', amount: 25.0, value: 3750.00, custodian: 'XStocks' },
-            { token: 'tMSFT', amount: 50.0, value: 18750.00, custodian: 'StableStocks' }
+            { 
+                token: 'tAAPL', 
+                amount: 100.5, 
+                price: 150.00, // 单价
+                value: 15075.75, 
+                custodian: 'StableStocks',
+                priceChange: 2.5 // 价格变化百分比
+            },
+            { 
+                token: 'tGOOGL', 
+                amount: 25.0, 
+                price: 150.00, 
+                value: 3750.00, 
+                custodian: 'XStocks',
+                priceChange: -1.2
+            },
+            { 
+                token: 'tMSFT', 
+                amount: 50.0, 
+                price: 375.00, 
+                value: 18750.00, 
+                custodian: 'StableStocks',
+                priceChange: 0.8
+            }
         ];
     }
 
@@ -352,6 +411,33 @@ class MintingModule {
         } else {
             alert(message);
         }
+    }
+
+    startPriceAnimation(priceElement, basePrice, priceChange) {
+        // 价格动态递增动画
+        if (!priceElement) return;
+        
+        const targetPrice = basePrice * (1 + priceChange / 100);
+        const startPrice = basePrice;
+        const duration = 2000; // 2秒动画
+        const startTime = Date.now();
+        
+        const animate = () => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            // 使用缓动函数
+            const easeProgress = 1 - Math.pow(1 - progress, 3);
+            const currentPrice = startPrice + (targetPrice - startPrice) * easeProgress;
+            
+            priceElement.textContent = currentPrice.toFixed(2);
+            
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            }
+        };
+        
+        animate();
     }
 
     showLoading(show) {
