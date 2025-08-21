@@ -89,6 +89,7 @@ class MintingModule {
                     holdingItem.className = 'holding-item';
                     holdingItem.innerHTML = `
                         <span class="token-name">${holding.token}</span>
+                        <span class="token-custodian">代持方: ${holding.custodian}</span>
                         <span class="token-amount">数量: ${holding.amount.toFixed(2)}</span>
                         <span class="token-value">$${holding.value.toLocaleString()}</span>
                     `;
@@ -118,19 +119,21 @@ class MintingModule {
     getMockHoldings() {
         // 模拟持仓数据
         return [
-            { token: 'tAAPL', amount: 100.5, value: 15075.75 },
-            { token: 'tGOOGL', amount: 25.0, value: 3750.00 },
-            { token: 'tMSFT', amount: 50.0, value: 18750.00 }
+            { token: 'tAAPL', amount: 100.5, value: 15075.75, custodian: 'StableStocks' },
+            { token: 'tGOOGL', amount: 25.0, value: 3750.00, custodian: 'XStocks' },
+            { token: 'tMSFT', amount: 50.0, value: 18750.00, custodian: 'StableStocks' }
         ];
     }
 
     async handleStake() {
         const stakingToken = document.getElementById('staking-token');
+        const stakingCustodian = document.getElementById('staking-custodian');
         const stakingAmount = document.getElementById('staking-amount');
         
-        if (!stakingToken || !stakingAmount) return;
+        if (!stakingToken || !stakingCustodian || !stakingAmount) return;
 
         const token = stakingToken.value;
+        const custodian = stakingCustodian.value;
         const amount = parseFloat(stakingAmount.value);
 
         if (!amount || amount <= 0) {
@@ -142,9 +145,9 @@ class MintingModule {
             this.showLoading(true);
             
             // 模拟质押操作
-            await this.simulateStake(token, amount);
+            await this.simulateStake(token, amount, custodian);
             
-            this.showMessage(`成功质押 ${amount} ${token}`, 'success');
+            this.showMessage(`成功质押 ${amount} ${token} 到 ${custodian}`, 'success');
             this.updateHoldingsDisplay();
             this.updateMintableAmount();
             this.updateStakingForm();
@@ -286,10 +289,30 @@ class MintingModule {
     }
 
     // 模拟操作函数
-    async simulateStake(token, amount) {
+    async simulateStake(token, amount, custodian) {
         return new Promise((resolve) => {
             setTimeout(() => {
-                console.log(`模拟质押 ${amount} ${token}`);
+                console.log(`模拟质押 ${amount} ${token} 到 ${custodian}`);
+                
+                // 更新模拟持仓数据
+                const holdings = this.getMockHoldings();
+                const existingHolding = holdings.find(h => h.token === token && h.custodian === custodian);
+                
+                if (existingHolding) {
+                    existingHolding.amount += amount;
+                    existingHolding.value = existingHolding.amount * 150; // 模拟价格
+                } else {
+                    holdings.push({
+                        token: token,
+                        amount: amount,
+                        value: amount * 150, // 模拟价格
+                        custodian: custodian
+                    });
+                }
+                
+                // 保存到localStorage（实际应用中应该保存到区块链）
+                localStorage.setItem('mockHoldings', JSON.stringify(holdings));
+                
                 resolve();
             }, 1000);
         });
