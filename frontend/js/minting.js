@@ -91,29 +91,28 @@ class MintingModule {
                 holdingsList.innerHTML = '';
                 let totalValue = 0;
 
-                                        holdings.forEach(holding => {
-                            if (holding.amount > 0) {
-                                const holdingItem = document.createElement('div');
-                                holdingItem.className = 'holding-item';
-                                holdingItem.innerHTML = `
-                                    <span class="token-name">${holding.token}</span>
-                                    <span class="token-custodian">代持方: ${holding.custodian}</span>
-                                    <span class="token-price" data-price="${holding.price}" data-change="${holding.priceChange}">
-                                        单价: $<span class="price-value">${holding.price.toFixed(2)}</span>
-                                        <span class="price-change ${holding.priceChange >= 0 ? 'positive' : 'negative'}">
-                                            ${holding.priceChange >= 0 ? '+' : ''}${holding.priceChange}%
-                                        </span>
-                                    </span>
-                                    <span class="token-amount">数量: ${holding.amount.toFixed(2)}</span>
-                                    <span class="token-value">$${holding.value.toLocaleString()}</span>
-                                `;
-                                holdingsList.appendChild(holdingItem);
-                                totalValue += holding.value;
-                                
-                                // 启动价格动画
-                                this.startPriceAnimation(holdingItem.querySelector('.price-value'), holding.price, holding.priceChange);
-                            }
-                        });
+                                                                        holdings.forEach(holding => {
+                                    if (holding.amount > 0) {
+                                        const holdingItem = document.createElement('div');
+                                        holdingItem.className = 'holding-item';
+                                        holdingItem.innerHTML = `
+                                            <span class="token-name">${holding.token}</span>
+                                            <span class="token-price" data-price="${holding.price}" data-change="${holding.priceChange}">
+                                                单价: $<span class="price-value">${holding.price.toFixed(2)}</span>
+                                                <span class="price-change ${holding.priceChange >= 0 ? 'positive' : 'negative'}">
+                                                    ${holding.priceChange >= 0 ? '+' : ''}${holding.priceChange}%
+                                                </span>
+                                            </span>
+                                            <span class="token-amount">数量: ${holding.amount.toFixed(2)}</span>
+                                            <span class="token-value">$${holding.value.toLocaleString()}</span>
+                                        `;
+                                        holdingsList.appendChild(holdingItem);
+                                        totalValue += holding.value;
+                                        
+                                        // 启动价格动画
+                                        this.startPriceAnimation(holdingItem.querySelector('.price-value'), holding.price, holding.priceChange);
+                                    }
+                                });
 
                 if (totalValueEl) {
                     totalValueEl.textContent = totalValue.toLocaleString();
@@ -162,7 +161,6 @@ class MintingModule {
                 amount: 100.5, 
                 price: 150.00, // 单价
                 value: 15075.75, 
-                custodian: 'StableStocks',
                 priceChange: 2.5 // 价格变化百分比
             },
             { 
@@ -170,7 +168,6 @@ class MintingModule {
                 amount: 25.0, 
                 price: 150.00, 
                 value: 3750.00, 
-                custodian: 'XStocks',
                 priceChange: -1.2
             },
             { 
@@ -178,7 +175,6 @@ class MintingModule {
                 amount: 50.0, 
                 price: 375.00, 
                 value: 18750.00, 
-                custodian: 'StableStocks',
                 priceChange: 0.8
             }
         ];
@@ -186,13 +182,11 @@ class MintingModule {
 
     async handleStake() {
         const stakingToken = document.getElementById('staking-token');
-        const stakingCustodian = document.getElementById('staking-custodian');
         const stakingAmount = document.getElementById('staking-amount');
         
-        if (!stakingToken || !stakingCustodian || !stakingAmount) return;
+        if (!stakingToken || !stakingAmount) return;
 
         const token = stakingToken.value;
-        const custodian = stakingCustodian.value;
         const amount = parseFloat(stakingAmount.value);
 
         if (!amount || amount <= 0) {
@@ -204,9 +198,9 @@ class MintingModule {
             this.showLoading(true);
             
             // 模拟质押操作
-            await this.simulateStake(token, amount, custodian);
+            await this.simulateStake(token, amount);
             
-            this.showMessage(`成功质押 ${amount} ${token} 到 ${custodian}`, 'success');
+            this.showMessage(`成功质押 ${amount} ${token}`, 'success');
             this.updateHoldingsDisplay();
             this.updateMintableAmount();
             this.updateStakingForm();
@@ -348,24 +342,27 @@ class MintingModule {
     }
 
     // 模拟操作函数
-    async simulateStake(token, amount, custodian) {
+    async simulateStake(token, amount) {
         return new Promise((resolve) => {
             setTimeout(() => {
-                console.log(`模拟质押 ${amount} ${token} 到 ${custodian}`);
+                console.log(`模拟质押 ${amount} ${token}`);
                 
                 // 更新模拟持仓数据
                 const holdings = this.getMockHoldings();
-                const existingHolding = holdings.find(h => h.token === token && h.custodian === custodian);
+                const existingHolding = holdings.find(h => h.token === token);
                 
                 if (existingHolding) {
                     existingHolding.amount += amount;
-                    existingHolding.value = existingHolding.amount * 150; // 模拟价格
+                    existingHolding.value = existingHolding.amount * existingHolding.price; // 使用实际价格
                 } else {
+                    // 为新代币创建持仓记录
+                    const newPrice = 150; // 默认价格
                     holdings.push({
                         token: token,
                         amount: amount,
-                        value: amount * 150, // 模拟价格
-                        custodian: custodian
+                        price: newPrice,
+                        value: amount * newPrice,
+                        priceChange: 0
                     });
                 }
                 
