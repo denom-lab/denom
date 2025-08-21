@@ -1,0 +1,27 @@
+{
+  "name": "denom",
+  "version": "1.0.0",
+  "description": "Denom - Web3股票代币协议前端应用",
+  "main": "index.js",
+  "scripts": {
+    "start": "npx http-server frontend -p 3000 -o",
+    "dev": "npx http-server frontend -p 3000 -o -c-1",
+    "build": "echo '静态项目，无需构建'",
+    "serve": "npx http-server frontend -p 3000"
+  },
+  "keywords": [
+    "web3",
+    "defi",
+    "stock-tokens",
+    "blockchain",
+    "ethereum"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
