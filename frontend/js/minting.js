@@ -1,21 +1,66 @@
-// 铸币模块功能
+// 铸币模块功能 - 与Vault合约交互
 
 class MintingModule {
     constructor() {
-        // 从配置文件获取合约配置
-        this.contractConfig = {
-            contractAddress: window.CONTRACT_CONFIG?.contractAddress || '',
-            rpcUrl: window.CONTRACT_CONFIG?.rpcUrl || '',
-            chainId: window.CONTRACT_CONFIG?.chainId || '',
-            abi: window.CONTRACT_CONFIG?.abi || []
-        };
+        this.web3 = null;
+        this.vaultContract = null;
+        this.nusdContract = null;
+        this.userAddress = null;
+        this.contractConfig = window.CONTRACT_CONFIG;
+        this.contractUtils = window.CONTRACT_UTILS;
         
         this.init();
     }
 
-    init() {
+    async init() {
         this.setupEventListeners();
-        this.loadStakingData();
+        await this.initializeWeb3();
+        await this.loadStakingData();
+    }
+
+    async initializeWeb3() {
+        try {
+            // 检查是否安装了MetaMask
+            if (typeof window.ethereum !== 'undefined') {
+                this.web3 = new Web3(window.ethereum);
+                
+                // 请求用户授权
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                this.userAddress = accounts[0];
+                
+                // 初始化合约实例
+                await this.initializeContracts();
+                
+                console.log('Web3初始化成功，用户地址:', this.userAddress);
+            } else {
+                console.log('请安装MetaMask钱包');
+                this.showMessage('请安装MetaMask钱包', 'error');
+            }
+        } catch (error) {
+            console.error('Web3初始化失败:', error);
+            this.showMessage('Web3初始化失败: ' + error.message, 'error');
+        }
+    }
+
+    async initializeContracts() {
+        try {
+            // 初始化Vault合约
+            this.vaultContract = new this.web3.eth.Contract(
+                this.contractConfig.vault.abi,
+                this.contractConfig.vault.address
+            );
+            
+            // 初始化NUSD合约
+            this.nusdContract = new this.web3.eth.Contract(
+                this.contractConfig.nusd.abi,
+                this.contractConfig.nusd.address
+            );
+            
+            console.log('合约初始化成功');
+        } catch (error) {
+            console.error('合约初始化失败:', error);
+            this.showMessage('合约初始化失败: ' + error.message, 'error');
+        }
     }
 
     setupEventListeners() {
@@ -62,28 +107,35 @@ class MintingModule {
         }
     }
 
-    loadStakingData() {
-        // 加载质押数据
-        this.updateStakingForm();
-        this.updateHoldingsDisplay();
-        this.updateMintableAmount();
+    async loadStakingData() {
+        if (!this.vaultContract || !this.userAddress) {
+            console.log('合约或用户地址未初始化，跳过数据加载');
+            return;
+        }
+
+        try {
+            await this.updateStakingForm();
+            await this.updateHoldingsDisplay();
+            await this.updateMintableAmount();
+        } catch (error) {
+            console.error('加载质押数据失败:', error);
+            this.showMessage('加载质押数据失败: ' + error.message, 'error');
+        }
     }
 
-    updateStakingForm() {
-        // 更新质押表单状态
+    async updateStakingForm() {
         const stakingToken = document.getElementById('staking-token');
         const stakingAmount = document.getElementById('staking-amount');
         
         if (stakingToken && stakingAmount) {
-            // 重置表单
             stakingAmount.value = '';
             this.onAmountChange();
         }
     }
 
-    updateHoldingsDisplay() {
-        // 更新持仓显示
-        this.getHoldingsFromContract().then(holdings => {
+    async updateHoldingsDisplay() {
+        try {
+            const holdings = await this.getHoldingsFromContract();
             const holdingsList = document.getElementById('holdings-list');
             const totalValueEl = document.getElementById('total-holdings-value');
             
@@ -91,66 +143,116 @@ class MintingModule {
                 holdingsList.innerHTML = '';
                 let totalValue = 0;
 
-                                                                                                                holdings.forEach(holding => {
-                                            if (holding.amount > 0) {
-                                                const holdingItem = document.createElement('div');
-                                                holdingItem.className = 'holding-item';
-                                                holdingItem.innerHTML = `
-                                                    <span class="token-name">${holding.token}</span>
-                                                    <span class="token-price" data-price="${holding.price}" data-change="${holding.priceChange}">
-                                                        单价: $<span class="price-value">${holding.price.toFixed(2)}</span>
-                                                        <span class="price-change ${holding.priceChange >= 0 ? 'positive' : 'negative'}">
-                                                            ${holding.priceChange >= 0 ? '+' : ''}${holding.priceChange}%
-                                                        </span>
-                                                    </span>
-                                                    <span class="token-amount">数量: ${holding.amount.toFixed(2)}</span>
-                                                    <span class="token-value">$${holding.value.toLocaleString()}</span>
-                                                `;
-                                                holdingsList.appendChild(holdingItem);
-                                                totalValue += holding.value;
-                                                
-                                                // 启动价格动画
-                                                this.startPriceAnimation(holdingItem.querySelector('.price-value'), holding.price, holding.priceChange);
-                                            }
-                                        });
+                holdings.forEach(holding => {
+                    if (holding.amount > 0) {
+                        const holdingItem = document.createElement('div');
+                        holdingItem.className = 'holding-item';
+                        holdingItem.innerHTML = `
+                            <span class="token-name">${holding.token}</span>
+                            <span class="token-price" data-price="${holding.price}" data-change="${holding.priceChange}">
+                                单价: $<span class="price-value">${holding.price.toFixed(2)}</span>
+                                <span class="price-change ${holding.priceChange >= 0 ? 'positive' : 'negative'}">
+                                    ${holding.priceChange >= 0 ? '+' : ''}${holding.priceChange}%
+                                </span>
+                            </span>
+                            <span class="token-amount">数量: ${holding.amount.toFixed(2)}</span>
+                            <span class="token-value">$${holding.value.toLocaleString()}</span>
+                        `;
+                        holdingsList.appendChild(holdingItem);
+                        totalValue += holding.value;
+                        
+                        // 启动价格动画
+                        this.startPriceAnimation(holdingItem.querySelector('.price-value'), holding.price, holding.priceChange);
+                    }
+                });
 
                 if (totalValueEl) {
                     totalValueEl.textContent = totalValue.toLocaleString();
                 }
             }
-        });
+        } catch (error) {
+            console.error('更新持仓显示失败:', error);
+        }
     }
 
-    updateMintableAmount() {
-        // 更新可铸造数量
-        this.getHoldingsFromContract().then(holdings => {
-            const totalValue = holdings.reduce((sum, holding) => sum + holding.value, 0);
-            const mintableAmount = totalValue * 0.7; // 70% 质押率
+    async updateMintableAmount() {
+        try {
+            if (!this.vaultContract || !this.userAddress) return;
+            
+            // 从合约获取用户总抵押品价值
+            const totalCollateralValue = await this.vaultContract.methods
+                .calculateTotalCollateralValue(this.userAddress)
+                .call({ from: this.userAddress });
+            
+            const mintableAmount = this.contractUtils.formatTokenAmount(totalCollateralValue) * 0.7; // 70% 质押率
 
             const mintableEl = document.getElementById('mintable-amount');
             if (mintableEl) {
-                mintableEl.textContent = mintableAmount.toLocaleString();
+                mintableEl.textContent = mintableAmount.toFixed(2);
             }
-        });
+        } catch (error) {
+            console.error('更新可铸造数量失败:', error);
+        }
     }
 
     async getHoldingsFromContract() {
-        // 从合约获取持仓数据
-        if (!this.contractConfig.contractAddress || !this.contractConfig.rpcUrl) {
-            console.log('合约配置未完成，使用模拟数据');
+        if (!this.vaultContract || !this.userAddress) {
+            console.log('合约或用户地址未初始化，使用模拟数据');
             return this.getMockHoldings();
         }
 
         try {
-            // 这里应该调用智能合约方法获取持仓数据
-            // 示例：const holdings = await contract.methods.getUserHoldings(userAddress).call();
+            // 从合约获取用户质押的代币信息
+            const [tokenAddresses, amounts] = await this.vaultContract.methods
+                .getUserStakedTokens(this.userAddress)
+                .call({ from: this.userAddress });
             
-            // 暂时返回模拟数据，实际应用中替换为合约调用
-            return this.getMockHoldings();
+            const holdings = [];
+            
+            for (let i = 0; i < tokenAddresses.length; i++) {
+                const tokenAddress = tokenAddresses[i];
+                const amount = amounts[i];
+                
+                if (amount > 0) {
+                    // 获取代币价格
+                    const price = await this.vaultContract.methods
+                        .getTokenPrice(tokenAddress)
+                        .call({ from: this.userAddress });
+                    
+                    // 获取代币符号（这里简化处理，实际应该从代币合约获取）
+                    const tokenSymbol = this.getTokenSymbolByAddress(tokenAddress);
+                    
+                    const formattedAmount = this.contractUtils.formatTokenAmount(amount);
+                    const formattedPrice = this.contractUtils.formatPrice(price);
+                    const value = parseFloat(formattedAmount) * parseFloat(formattedPrice);
+                    
+                    holdings.push({
+                        token: tokenSymbol,
+                        amount: parseFloat(formattedAmount),
+                        price: parseFloat(formattedPrice),
+                        value: value,
+                        priceChange: 0, // 价格变化需要从其他地方获取
+                        address: tokenAddress
+                    });
+                }
+            }
+            
+            return holdings;
         } catch (error) {
             console.error('从合约获取持仓数据失败:', error);
             return this.getMockHoldings();
         }
+    }
+
+    getTokenSymbolByAddress(address) {
+        // 根据地址获取代币符号（简化实现）
+        const tokenAddresses = this.contractConfig.tokenAddresses;
+        for (const [symbol, tokenAddress] of Object.entries(tokenAddresses)) {
+            if (tokenAddress.toLowerCase() === address.toLowerCase()) {
+                return symbol;
+            }
+        }
+        return 'Unknown';
     }
 
     getMockHoldings() {
@@ -181,6 +283,11 @@ class MintingModule {
     }
 
     async handleStake() {
+        if (!this.vaultContract || !this.userAddress) {
+            this.showMessage('请先连接钱包', 'error');
+            return;
+        }
+
         const stakingProtocol = document.getElementById('staking-protocol');
         const stakingToken = document.getElementById('staking-token');
         const stakingAmount = document.getElementById('staking-amount');
@@ -188,7 +295,7 @@ class MintingModule {
         if (!stakingProtocol || !stakingToken || !stakingAmount) return;
 
         const protocol = stakingProtocol.value;
-        const token = stakingToken.value;
+        const tokenSymbol = stakingToken.value;
         const amount = parseFloat(stakingAmount.value);
 
         if (!amount || amount <= 0) {
@@ -199,15 +306,28 @@ class MintingModule {
         try {
             this.showLoading(true);
             
-            // 模拟质押操作
-            await this.simulateStake(token, amount, protocol);
+            // 获取代币合约地址
+            const tokenAddress = this.contractConfig.tokenAddresses[tokenSymbol];
+            if (!tokenAddress || tokenAddress === '0x0000000000000000000000000000000000000000') {
+                throw new Error('代币地址未配置，请先部署代币合约');
+            }
             
-            this.showMessage(`成功质押 ${amount} ${token} 到 ${protocol}`, 'success');
-            this.updateHoldingsDisplay();
-            this.updateMintableAmount();
-            this.updateStakingForm();
+            // 转换数量为wei
+            const amountWei = this.contractUtils.parseTokenAmount(amount);
+            
+            // 调用Vault合约的质押方法
+            const result = await this.vaultContract.methods
+                .stakeToken(tokenAddress, amountWei)
+                .send({ from: this.userAddress });
+            
+            this.showMessage(`成功质押 ${amount} ${tokenSymbol} 到 ${protocol}`, 'success');
+            console.log('质押交易成功:', result);
+            
+            // 刷新数据
+            await this.loadStakingData();
             
         } catch (error) {
+            console.error('质押失败:', error);
             this.showMessage(`质押失败: ${error.message}`, 'error');
         } finally {
             this.showLoading(false);
@@ -215,6 +335,11 @@ class MintingModule {
     }
 
     async handleMint() {
+        if (!this.vaultContract || !this.userAddress) {
+            this.showMessage('请先连接钱包', 'error');
+            return;
+        }
+
         const mintAmount = document.getElementById('mint-amount');
         if (!mintAmount) return;
 
@@ -226,21 +351,30 @@ class MintingModule {
 
         const mintableAmount = this.getMintableAmount();
         if (amount > mintableAmount) {
-            this.showMessage(`铸造数量不能超过可铸造数量 (${mintableAmount.toLocaleString()} NUSD)`, 'error');
+            this.showMessage(`铸造数量不能超过可铸造数量 (${mintableAmount.toFixed(2)} NUSD)`, 'error');
             return;
         }
 
         try {
             this.showLoading(true);
             
-            // 模拟铸造操作
-            await this.simulateMint(amount);
+            // 转换数量为wei
+            const amountWei = this.contractUtils.parseTokenAmount(amount);
             
-            this.showMessage(`成功铸造 ${amount.toLocaleString()} NUSD`, 'success');
-            this.updateMintableAmount();
+            // 调用Vault合约的借贷方法
+            const result = await this.vaultContract.methods
+                .borrowNUSD(amountWei)
+                .send({ from: this.userAddress });
+            
+            this.showMessage(`成功铸造 ${amount.toFixed(2)} NUSD`, 'success');
+            console.log('铸造交易成功:', result);
+            
+            // 刷新数据
+            await this.updateMintableAmount();
             mintAmount.value = '';
             
         } catch (error) {
+            console.error('铸造失败:', error);
             this.showMessage(`铸造失败: ${error.message}`, 'error');
         } finally {
             this.showLoading(false);
@@ -248,6 +382,11 @@ class MintingModule {
     }
 
     async handleRepay() {
+        if (!this.vaultContract || !this.userAddress) {
+            this.showMessage('请先连接钱包', 'error');
+            return;
+        }
+
         const mintAmount = document.getElementById('mint-amount');
         if (!mintAmount) return;
 
@@ -260,14 +399,28 @@ class MintingModule {
         try {
             this.showLoading(true);
             
-            // 模拟归还操作
-            await this.simulateRepay(amount);
+            // 转换数量为wei
+            const amountWei = this.contractUtils.parseTokenAmount(amount);
             
-            this.showMessage(`成功归还 ${amount.toLocaleString()} NUSD`, 'success');
-            this.updateMintableAmount();
+            // 先授权Vault合约使用NUSD
+            await this.nusdContract.methods
+                .approve(this.contractConfig.vault.address, amountWei)
+                .send({ from: this.userAddress });
+            
+            // 调用Vault合约的归还方法
+            const result = await this.vaultContract.methods
+                .repayNUSD(amountWei)
+                .send({ from: this.userAddress });
+            
+            this.showMessage(`成功归还 ${amount.toFixed(2)} NUSD`, 'success');
+            console.log('归还交易成功:', result);
+            
+            // 刷新数据
+            await this.updateMintableAmount();
             mintAmount.value = '';
             
         } catch (error) {
+            console.error('归还失败:', error);
             this.showMessage(`归还失败: ${error.message}`, 'error');
         } finally {
             this.showLoading(false);
@@ -275,12 +428,17 @@ class MintingModule {
     }
 
     async handleUnstake() {
+        if (!this.vaultContract || !this.userAddress) {
+            this.showMessage('请先连接钱包', 'error');
+            return;
+        }
+
         const stakingToken = document.getElementById('staking-token');
         const stakingAmount = document.getElementById('staking-amount');
         
         if (!stakingToken || !stakingAmount) return;
 
-        const token = stakingToken.value;
+        const tokenSymbol = stakingToken.value;
         const amount = parseFloat(stakingAmount.value);
 
         if (!amount || amount <= 0) {
@@ -291,15 +449,28 @@ class MintingModule {
         try {
             this.showLoading(true);
             
-            // 模拟解除质押操作
-            await this.simulateUnstake(token, amount);
+            // 获取代币合约地址
+            const tokenAddress = this.contractConfig.tokenAddresses[tokenSymbol];
+            if (!tokenAddress || tokenAddress === '0x0000000000000000000000000000000000000000') {
+                throw new Error('代币地址未配置，请先部署代币合约');
+            }
             
-            this.showMessage(`成功解除质押 ${amount} ${token}`, 'success');
-            this.updateHoldingsDisplay();
-            this.updateMintableAmount();
-            this.updateStakingForm();
+            // 转换数量为wei
+            const amountWei = this.contractUtils.parseTokenAmount(amount);
+            
+            // 调用Vault合约的解质押方法
+            const result = await this.vaultContract.methods
+                .unstakeToken(tokenAddress, amountWei)
+                .send({ from: this.userAddress });
+            
+            this.showMessage(`成功解除质押 ${amount} ${tokenSymbol}`, 'success');
+            console.log('解质押交易成功:', result);
+            
+            // 刷新数据
+            await this.loadStakingData();
             
         } catch (error) {
+            console.error('解除质押失败:', error);
             this.showMessage(`解除质押失败: ${error.message}`, 'error');
         } finally {
             this.showLoading(false);
@@ -341,67 +512,6 @@ class MintingModule {
             return parseFloat(text.replace(/,/g, '')) || 0;
         }
         return 0;
-    }
-
-    // 模拟操作函数
-    async simulateStake(token, amount, protocol) {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                console.log(`模拟质押 ${amount} ${token} 到 ${protocol}`);
-                
-                // 更新模拟持仓数据
-                const holdings = this.getMockHoldings();
-                const existingHolding = holdings.find(h => h.token === token);
-                
-                if (existingHolding) {
-                    existingHolding.amount += amount;
-                    existingHolding.value = existingHolding.amount * existingHolding.price; // 使用实际价格
-                } else {
-                    // 为新代币创建持仓记录
-                    const newPrice = 150; // 默认价格
-                    holdings.push({
-                        token: token,
-                        amount: amount,
-                        price: newPrice,
-                        value: amount * newPrice,
-                        priceChange: 0,
-                        protocol: protocol
-                    });
-                }
-                
-                // 保存到localStorage（实际应用中应该保存到区块链）
-                localStorage.setItem('mockHoldings', JSON.stringify(holdings));
-                
-                resolve();
-            }, 1000);
-        });
-    }
-
-    async simulateMint(amount) {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                console.log(`模拟铸造 ${amount} NUSD`);
-                resolve();
-            }, 1000);
-        });
-    }
-
-    async simulateRepay(amount) {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                console.log(`模拟归还 ${amount} NUSD`);
-                resolve();
-            }, 1000);
-        });
-    }
-
-    async simulateUnstake(token, amount) {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                console.log(`模拟解除质押 ${amount} ${token}`);
-                resolve();
-            }, 1000);
-        });
     }
 
     showMessage(message, type = 'info') {
