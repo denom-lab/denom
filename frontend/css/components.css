@@ -7,6 +7,18 @@
     gap: 1rem;
 }
 
+/* 铸造表单 */
+.minting-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* 铸造和归还按钮之间的间距 */
+.minting-form .btn + .btn {
+    margin-top: 1rem;
+}
+
 /* 持仓卡片 */
 .holdings-list {
     margin-bottom: 1rem;
@@ -129,12 +141,7 @@
     margin-bottom: 1rem;
 }
 
-/* 操作按钮 */
-.action-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
+
 
 /* 健康度指示器 */
 .health-indicator {

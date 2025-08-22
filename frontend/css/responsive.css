@@ -100,9 +100,7 @@
         flex-direction: column;
     }
     
-    .action-buttons {
-        gap: 0.5rem;
-    }
+
     
     .modal-content {
         margin: 10% auto;
