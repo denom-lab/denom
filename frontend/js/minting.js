@@ -250,39 +250,83 @@ class MintingModule {
             const holdingsList = document.getElementById('holdings-list');
             const totalValueEl = document.getElementById('total-holdings-value');
             
-            if (holdingsList) {
-                holdingsList.innerHTML = '';
-                let totalValue = 0;
-
-                holdings.forEach(holding => {
-                    if (holding.amount > 0) {
-                        const holdingItem = document.createElement('div');
-                        holdingItem.className = 'holding-item';
-                        holdingItem.innerHTML = `
-                            <span class="token-name">${holding.token}</span>
-                            <span class="token-price" data-price="${holding.price}" data-change="${holding.priceChange}">
-                                单价: $<span class="price-value">${holding.price.toFixed(2)}</span>
-                                <span class="price-change ${holding.priceChange >= 0 ? 'positive' : 'negative'}">
-                                    ${holding.priceChange >= 0 ? '+' : ''}${holding.priceChange}%
-                                </span>
-                            </span>
-                            <span class="token-amount">数量: ${holding.amount.toFixed(2)}</span>
-                            <span class="token-value">$${holding.value.toLocaleString()}</span>
-                        `;
-                        holdingsList.appendChild(holdingItem);
-                        totalValue += holding.value;
-                        
-                        // 启动价格动画
-                        this.startPriceAnimation(holdingItem.querySelector('.price-value'), holding.price, holding.priceChange);
-                    }
-                });
-
-                if (totalValueEl) {
-                    totalValueEl.textContent = totalValue.toLocaleString();
-                }
+            // 安全检查：确保holdings是数组
+            if (!Array.isArray(holdings)) {
+                console.error('持仓数据不是数组:', holdings);
+                console.log('使用模拟数据');
+                const mockHoldings = this.getMockHoldings();
+                this.displayHoldings(mockHoldings, holdingsList, totalValueEl);
+                return;
             }
+            
+            console.log('持仓数据验证通过，开始显示:', holdings);
+            this.displayHoldings(holdings, holdingsList, totalValueEl);
+            
         } catch (error) {
             console.error('更新持仓显示失败:', error);
+            console.error('错误详情:', error.message);
+            console.error('错误堆栈:', error.stack);
+            
+            // 出错时使用模拟数据
+            try {
+                const mockHoldings = this.getMockHoldings();
+                const holdingsList = document.getElementById('holdings-list');
+                const totalValueEl = document.getElementById('total-holdings-value');
+                this.displayHoldings(mockHoldings, holdingsList, totalValueEl);
+            } catch (fallbackError) {
+                console.error('回退到模拟数据也失败:', fallbackError);
+            }
+        }
+    }
+
+    displayHoldings(holdings, holdingsList, totalValueEl) {
+        if (!holdingsList) return;
+        
+        holdingsList.innerHTML = '';
+        let totalValue = 0;
+
+        try {
+            holdings.forEach((holding, index) => {
+                console.log(`处理持仓 ${index}:`, holding);
+                
+                // 验证持仓数据格式
+                if (!holding || typeof holding !== 'object') {
+                    console.warn(`持仓 ${index} 数据格式无效:`, holding);
+                    return;
+                }
+                
+                if (!holding.amount || !holding.token || !holding.price || !holding.value) {
+                    console.warn(`持仓 ${index} 缺少必要字段:`, holding);
+                    return;
+                }
+                
+                if (holding.amount > 0) {
+                    const holdingItem = document.createElement('div');
+                    holdingItem.className = 'holding-item';
+                    holdingItem.innerHTML = `
+                        <span class="token-name">${holding.token}</span>
+                        <span class="token-price" data-price="${holding.price}" data-change="${holding.priceChange || 0}">
+                            单价: $<span class="price-value">${holding.price.toFixed(2)}</span>
+                            <span class="price-change ${(holding.priceChange || 0) >= 0 ? 'positive' : 'negative'}">
+                                ${(holding.priceChange || 0) >= 0 ? '+' : ''}${holding.priceChange || 0}%
+                            </span>
+                        </span>
+                        <span class="token-amount">数量: ${holding.amount.toFixed(2)}</span>
+                        <span class="token-value">$${holding.value.toLocaleString()}</span>
+                    `;
+                    holdingsList.appendChild(holdingItem);
+                    totalValue += holding.value;
+                    
+                    // 启动价格动画
+                    this.startPriceAnimation(holdingItem.querySelector('.price-value'), holding.price, holding.priceChange || 0);
+                }
+            });
+        } catch (forEachError) {
+            console.error('遍历持仓数据时出错:', forEachError);
+        }
+
+        if (totalValueEl) {
+            totalValueEl.textContent = totalValue.toLocaleString();
         }
     }
 
@@ -313,10 +357,67 @@ class MintingModule {
         }
 
         try {
+            console.log('🔍 开始从合约获取持仓数据...');
+            console.log('用户地址:', this.userAddress);
+            console.log('Vault合约地址:', this.vaultContract._address);
+            
+            // 先检查合约是否支持getUserStakedTokens方法
+            if (!this.vaultContract.methods.getUserStakedTokens) {
+                console.log('合约不支持getUserStakedTokens方法，使用模拟数据');
+                return this.getMockHoldings();
+            }
+            
             // 从合约获取用户质押的代币信息
-            const [tokenAddresses, amounts] = await this.vaultContract.methods
-                .getUserStakedTokens(this.userAddress)
-                .call({ from: this.userAddress });
+            console.log('调用getUserStakedTokens方法...');
+            
+            let result;
+            try {
+                result = await this.vaultContract.methods
+                    .getUserStakedTokens(this.userAddress)
+                    .call({ from: this.userAddress });
+                
+                console.log('合约返回结果:', result);
+                console.log('返回结果类型:', typeof result);
+                console.log('返回结果是否为数组:', Array.isArray(result));
+                
+                // 如果返回结果是null或undefined，使用模拟数据
+                if (!result) {
+                    console.log('合约返回null或undefined，使用模拟数据');
+                    return this.getMockHoldings();
+                }
+                
+            } catch (callError) {
+                console.error('合约调用失败:', callError);
+                console.error('调用错误详情:', callError.message);
+                return this.getMockHoldings();
+            }
+            
+            // 检查返回结果是否为数组
+            if (!Array.isArray(result) || result.length !== 2) {
+                console.log('合约返回格式不正确，使用模拟数据');
+                return this.getMockHoldings();
+            }
+            
+            // 使用更安全的方式获取数组，避免解构赋值错误
+            let tokenAddresses, amounts;
+            try {
+                tokenAddresses = result[0];
+                amounts = result[1];
+                console.log('成功获取代币地址数组:', tokenAddresses);
+                console.log('成功获取数量数组:', amounts);
+            } catch (destructureError) {
+                console.error('解构赋值失败:', destructureError);
+                return this.getMockHoldings();
+            }
+            
+            // 检查数组是否为空
+            if (!Array.isArray(tokenAddresses) || !Array.isArray(amounts)) {
+                console.log('代币地址或数量数组格式不正确，使用模拟数据');
+                return this.getMockHoldings();
+            }
+            
+            console.log('代币地址数组:', tokenAddresses);
+            console.log('数量数组:', amounts);
             
             const holdings = [];
             
@@ -324,33 +425,57 @@ class MintingModule {
                 const tokenAddress = tokenAddresses[i];
                 const amount = amounts[i];
                 
+                console.log(`处理代币 ${i}: 地址=${tokenAddress}, 数量=${amount}`);
+                
                 if (amount > 0) {
-                    // 获取代币价格
-                    const price = await this.vaultContract.methods
-                        .getTokenPrice(tokenAddress)
-                        .call({ from: this.userAddress });
-                    
-                    // 获取代币符号（这里简化处理，实际应该从代币合约获取）
-                    const tokenSymbol = this.getTokenSymbolByAddress(tokenAddress);
-                    
-                    const formattedAmount = this.contractUtils.formatTokenAmount(amount);
-                    const formattedPrice = this.contractUtils.formatPrice(price);
-                    const value = parseFloat(formattedAmount) * parseFloat(formattedPrice);
-                    
-                    holdings.push({
-                        token: tokenSymbol,
-                        amount: parseFloat(formattedAmount),
-                        price: parseFloat(formattedPrice),
-                        value: value,
-                        priceChange: 0, // 价格变化需要从其他地方获取
-                        address: tokenAddress
-                    });
+                    try {
+                        // 获取代币价格
+                        const price = await this.vaultContract.methods
+                            .getTokenPrice(tokenAddress)
+                            .call({ from: this.userAddress });
+                        
+                        console.log(`代币 ${tokenAddress} 价格:`, price);
+                        
+                        // 获取代币符号
+                        const tokenSymbol = this.getTokenSymbolByAddress(tokenAddress);
+                        
+                        const formattedAmount = this.contractUtils.formatTokenAmount(amount);
+                        const formattedPrice = this.contractUtils.formatPrice(price);
+                        const value = parseFloat(formattedAmount) * parseFloat(formattedPrice);
+                        
+                        holdings.push({
+                            token: tokenSymbol,
+                            amount: parseFloat(formattedAmount),
+                            price: parseFloat(formattedPrice),
+                            value: value,
+                            priceChange: 0, // 价格变化需要从其他地方获取
+                            address: tokenAddress
+                        });
+                        
+                        console.log(`成功添加持仓: ${tokenSymbol} - ${formattedAmount} @ $${formattedPrice}`);
+                    } catch (tokenError) {
+                        console.error(`处理代币 ${tokenAddress} 时出错:`, tokenError);
+                        // 继续处理其他代币
+                    }
                 }
             }
             
+            console.log('最终持仓数据:', holdings);
             return holdings;
+            
         } catch (error) {
             console.error('从合约获取持仓数据失败:', error);
+            console.error('错误详情:', error.message);
+            console.error('错误堆栈:', error.stack);
+            
+            // 尝试获取更多错误信息
+            if (error.reason) {
+                console.error('错误原因:', error.reason);
+            }
+            if (error.code) {
+                console.error('错误代码:', error.code);
+            }
+            
             return this.getMockHoldings();
         }
     }
