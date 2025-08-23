@@ -10,7 +10,7 @@ window.CONTRACT_CONFIG = {
         },
         // Reddio测试网
         reddio: {
-            chainId: '0xC4D5', // 50341
+            chainId: '0xc4a5', // 50341
             rpcUrl: 'https://reddio-dev.reddio.com',
             name: 'Reddio Testnet'
         }
@@ -19,7 +19,7 @@ window.CONTRACT_CONFIG = {
     // Vault合约配置
     vault: {
         // 合约地址 - 已部署到Reddio测试网
-        address: '0xbe9B0f9eC92c39205862d76F97f01eC021ceD7Fc',
+        address: '0xFe3943b9C0A2D361976752e1212dA87D3C5F438F',
         abi: [
             // 添加支持的代币
             {
@@ -158,7 +158,7 @@ window.CONTRACT_CONFIG = {
     // NUSD合约配置
     nusd: {
         // 合约地址 - 已部署到Reddio测试网
-        address: '0xc54E9A7D35a9a8101af66108755a4b216C198a7E',
+        address: '0xfa71365Cbd1a549637d713DC37743d086f1A561c',
         abi: [
             // 查询余额
             {
@@ -209,7 +209,7 @@ window.CONTRACT_CONFIG = {
     
     // 代币地址映射（用于前端显示）
     tokenAddresses: {
-        'tAAPL': '0xAcC564D527307e8a3d82E33Ff1e2d5C63B8A5ab5', // 已部署到Reddio测试网
+        'tAAPL': '0xb62d8309708F1f3467129B931FA992ceAf742154', // 已部署到Reddio测试网
         'tGOOGL': '0x0000000000000000000000000000000000000000', // 请替换为实际地址
         'tMSFT': '0x0000000000000000000000000000000000000000', // 请替换为实际地址
         'tTSLA': '0x0000000000000000000000000000000000000000'  // 请替换为实际地址
