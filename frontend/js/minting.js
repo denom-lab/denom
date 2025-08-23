@@ -338,9 +338,19 @@ class MintingModule {
             const totalCollateralValue = await this.vaultContract.methods
                 .calculateTotalCollateralValue(this.userAddress)
                 .call({ from: this.userAddress });
-            console.log("totalCollateralValue___", totalCollateralValue)
+            console.log("borrowedNUSD___1", totalCollateralValue)
             
-            const mintableAmount = this.contractUtils.formatTokenAmount(totalCollateralValue) * 0.7; // 70% 质押率
+            const borrowedNUSD = await this.vaultContract.methods
+                .getUserBorrowedNUSD(this.userAddress)
+                .call({ from: this.userAddress });
+            const formattedBorrowedNUSD = this.contractUtils.formatTokenAmount(borrowedNUSD);
+
+            console.log("borrowedNUSD___1", formattedBorrowedNUSD)
+
+            let mintableAmount = (this.contractUtils.formatTokenAmount(totalCollateralValue) * 0.7) - formattedBorrowedNUSD; // 70% 质押率，减去已借入数量
+            if (mintableAmount < 0) {
+                mintableAmount = 0;
+            }
 
             const mintableEl = document.getElementById('mintable-amount');
             if (mintableEl) {
