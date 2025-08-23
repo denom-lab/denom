@@ -99,7 +99,7 @@ class MintingModule {
             console.log('当前连接的网络Chain ID:', chainId);
             
             // Reddio测试网的Chain ID
-            const reddioChainId = '0xC4D5'; // 50341
+            const reddioChainId = '0xC4a5'; // 50341
             
             if (chainId !== reddioChainId) {
                 console.log('当前网络不是Reddio测试网，尝试切换...');
@@ -338,6 +338,7 @@ class MintingModule {
             const totalCollateralValue = await this.vaultContract.methods
                 .calculateTotalCollateralValue(this.userAddress)
                 .call({ from: this.userAddress });
+            console.log("totalCollateralValue___", totalCollateralValue)
             
             const mintableAmount = this.contractUtils.formatTokenAmount(totalCollateralValue) * 0.7; // 70% 质押率
 
@@ -379,6 +380,10 @@ class MintingModule {
                 console.log('合约返回结果:', result);
                 console.log('返回结果类型:', typeof result);
                 console.log('返回结果是否为数组:', Array.isArray(result));
+
+                if (result[0] && result[1]) {
+                    result = [result[0], result[1]];
+                }
                 
                 // 如果返回结果是null或undefined，使用模拟数据
                 if (!result) {
@@ -703,13 +708,22 @@ class MintingModule {
             // 调用Vault合约的解质押方法
             const result = await this.vaultContract.methods
                 .unstakeToken(tokenAddress, amountWei)
-                .send({ from: this.userAddress });
+                .send({ from: this.userAddress })
+                .on('receipt', (receipt) => {
+                    console.log('解质押交易确认:', receipt);
+                    this.showMessage(`成功解除质押 ${amount} ${tokenSymbol}`, 'success');
+                    // 刷新数据
+                    this.loadStakingData();
+                })
+                .on('error', (error) => {
+                    console.error('解除质押失败:', error);
+                    this.showMessage(`解除质押失败: ${error.message}`, 'error');
+                });
             
-            this.showMessage(`成功解除质押 ${amount} ${tokenSymbol}`, 'success');
-            console.log('解质押交易成功:', result);
+
+
+
             
-            // 刷新数据
-            await this.loadStakingData();
             
         } catch (error) {
             console.error('解除质押失败:', error);
