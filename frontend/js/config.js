@@ -19,7 +19,7 @@ window.CONTRACT_CONFIG = {
     // Vault合约配置
     vault: {
         // 合约地址 - 已部署到Reddio测试网
-        address: '0xFe3943b9C0A2D361976752e1212dA87D3C5F438F',
+        address: '0x23e7Fd0728b928a5e9Eb10CB0572d455f031fA0f',
         abi: [
             // 添加支持的代币
             {
@@ -158,7 +158,7 @@ window.CONTRACT_CONFIG = {
     // NUSD合约配置
     nusd: {
         // 合约地址 - 已部署到Reddio测试网
-        address: '0xfa71365Cbd1a549637d713DC37743d086f1A561c',
+        address: '0x19a27066e3bebdEea3c5ba0B0EFf664B06f297Aa',
         abi: [
             // 查询余额
             {
@@ -209,7 +209,7 @@ window.CONTRACT_CONFIG = {
     
     // 代币地址映射（用于前端显示）
     tokenAddresses: {
-        'tAAPL': '0xb62d8309708F1f3467129B931FA992ceAf742154', // 已部署到Reddio测试网
+        'tAAPL': '0xAf3264Af3eb9fE7884f35E11e0a70e9f63E25C28', // 已部署到Reddio测试网
         'tGOOGL': '0x0000000000000000000000000000000000000000', // 请替换为实际地址
         'tMSFT': '0x0000000000000000000000000000000000000000', // 请替换为实际地址
         'tTSLA': '0x0000000000000000000000000000000000000000'  // 请替换为实际地址
