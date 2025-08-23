@@ -8,13 +8,18 @@ window.CONTRACT_CONFIG = {
             rpcUrl: 'http://localhost:8545',
             name: 'Localhost'
         },
-        // 其他网络配置可以在这里添加
+        // Reddio测试网
+        reddio: {
+            chainId: '0xC4D5', // 50341
+            rpcUrl: 'https://reddio-dev.reddio.com',
+            name: 'Reddio Testnet'
+        }
     },
     
     // Vault合约配置
     vault: {
-        // 合约地址 - 部署后需要更新
-        address: '0x0000000000000000000000000000000000000000', // 请替换为实际部署的地址
+        // 合约地址 - 已部署到Reddio测试网
+        address: '0xbe9B0f9eC92c39205862d76F97f01eC021ceD7Fc',
         abi: [
             // 添加支持的代币
             {
@@ -152,8 +157,8 @@ window.CONTRACT_CONFIG = {
     
     // NUSD合约配置
     nusd: {
-        // 合约地址 - 部署后需要更新
-        address: '0x0000000000000000000000000000000000000000', // 请替换为实际部署的地址
+        // 合约地址 - 已部署到Reddio测试网
+        address: '0xc54E9A7D35a9a8101af66108755a4b216C198a7E',
         abi: [
             // 查询余额
             {
@@ -204,7 +209,7 @@ window.CONTRACT_CONFIG = {
     
     // 代币地址映射（用于前端显示）
     tokenAddresses: {
-        'tAAPL': '0x0000000000000000000000000000000000000000', // 请替换为实际地址
+        'tAAPL': '0xAcC564D527307e8a3d82E33Ff1e2d5C63B8A5ab5', // 已部署到Reddio测试网
         'tGOOGL': '0x0000000000000000000000000000000000000000', // 请替换为实际地址
         'tMSFT': '0x0000000000000000000000000000000000000000', // 请替换为实际地址
         'tTSLA': '0x0000000000000000000000000000000000000000'  // 请替换为实际地址
@@ -213,7 +218,6 @@ window.CONTRACT_CONFIG = {
     // 代币符号到地址的映射
     tokenSymbols: {
         'tAAPL': 'tAAPL',
-        'tGOOGL': 'tGOOGL', 
         'tMSFT': 'tMSFT',
         'tTSLA': 'tTSLA'
     }

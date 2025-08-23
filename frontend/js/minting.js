@@ -9,6 +9,9 @@ class MintingModule {
         this.contractConfig = window.CONTRACT_CONFIG;
         this.contractUtils = window.CONTRACT_UTILS;
         
+        console.log('MintingModule初始化，合约配置:', this.contractConfig);
+        console.log('代币地址映射:', this.contractConfig?.tokenAddresses);
+        
         this.init();
     }
 
@@ -28,6 +31,9 @@ class MintingModule {
                 const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                 this.userAddress = accounts[0];
                 
+                // 检查网络连接
+                await this.checkAndSwitchNetwork();
+                
                 // 初始化合约实例
                 await this.initializeContracts();
                 
@@ -39,6 +45,57 @@ class MintingModule {
         } catch (error) {
             console.error('Web3初始化失败:', error);
             this.showMessage('Web3初始化失败: ' + error.message, 'error');
+        }
+    }
+
+    async checkAndSwitchNetwork() {
+        try {
+            const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+            console.log('当前连接的网络Chain ID:', chainId);
+            
+            // Reddio测试网的Chain ID
+            const reddioChainId = '0xC4D5'; // 50341
+            
+            if (chainId !== reddioChainId) {
+                console.log('当前网络不是Reddio测试网，尝试切换...');
+                
+                try {
+                    // 尝试切换到Reddio测试网
+                    await window.ethereum.request({
+                        method: 'wallet_switchEthereumChain',
+                        params: [{ chainId: reddioChainId }],
+                    });
+                    console.log('成功切换到Reddio测试网');
+                } catch (switchError) {
+                    console.log('切换网络失败，尝试添加网络:', switchError);
+                    
+                    // 如果网络不存在，尝试添加
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_addEthereumChain',
+                            params: [{
+                                chainId: reddioChainId,
+                                chainName: 'Reddio Testnet',
+                                nativeCurrency: {
+                                    name: 'ETH',
+                                    symbol: 'ETH',
+                                    decimals: 18
+                                },
+                                rpcUrls: ['https://reddio-dev.reddio.com'],
+                                blockExplorerUrls: ['https://reddio-dev.reddio.com/']
+                            }],
+                        });
+                        console.log('成功添加Reddio测试网');
+                    } catch (addError) {
+                        console.error('添加网络失败:', addError);
+                        this.showMessage('请手动切换到Reddio测试网 (Chain ID: 50341)', 'warning');
+                    }
+                }
+            } else {
+                console.log('已连接到Reddio测试网');
+            }
+        } catch (error) {
+            console.error('网络检查失败:', error);
         }
     }
 
@@ -307,9 +364,15 @@ class MintingModule {
             this.showLoading(true);
             
             // 获取代币合约地址
+            console.log('选择的代币符号:', tokenSymbol);
+            console.log('合约配置:', this.contractConfig);
+            console.log('代币地址映射:', this.contractConfig.tokenAddresses);
+            
             const tokenAddress = this.contractConfig.tokenAddresses[tokenSymbol];
+            console.log('获取到的代币地址:', tokenAddress);
+            
             if (!tokenAddress || tokenAddress === '0x0000000000000000000000000000000000000000') {
-                throw new Error('代币地址未配置，请先部署代币合约');
+                throw new Error(`代币地址未配置，请先部署代币合约。代币符号: ${tokenSymbol}`);
             }
             
             // 转换数量为wei
