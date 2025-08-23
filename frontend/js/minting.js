@@ -23,24 +23,28 @@ class MintingModule {
 
     async initializeWeb3() {
         try {
-            // 检查是否安装了MetaMask
-            if (typeof window.ethereum !== 'undefined') {
-                this.web3 = new Web3(window.ethereum);
+            // 检测可用的钱包
+            const walletProvider = this.detectWalletProvider();
+            
+            if (walletProvider) {
+                this.web3 = new Web3(walletProvider);
                 
                 // 请求用户授权
-                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                const accounts = await walletProvider.request({ method: 'eth_requestAccounts' });
                 this.userAddress = accounts[0];
                 
                 // 检查网络连接
-                await this.checkAndSwitchNetwork();
+                await this.checkAndSwitchNetwork(walletProvider);
                 
                 // 初始化合约实例
                 await this.initializeContracts();
                 
                 console.log('Web3初始化成功，用户地址:', this.userAddress);
+                console.log('使用的钱包:', walletProvider.isMetaMask ? 'MetaMask' : 
+                           walletProvider.isOKXWallet ? 'OKX Wallet' : '其他钱包');
             } else {
-                console.log('请安装MetaMask钱包');
-                this.showMessage('请安装MetaMask钱包', 'error');
+                console.log('请安装钱包扩展');
+                this.showMessage('请安装MetaMask、OKX Wallet或其他兼容的钱包扩展', 'error');
             }
         } catch (error) {
             console.error('Web3初始化失败:', error);
@@ -48,9 +52,50 @@ class MintingModule {
         }
     }
 
-    async checkAndSwitchNetwork() {
+    detectWalletProvider() {
+        console.log('🔍 检测可用钱包...');
+        console.log('MetaMask:', !!window.ethereum);
+        console.log('OKX Wallet:', !!window.okxwallet);
+        
+        // 检查用户是否选择了特定钱包
+        const walletSelector = document.getElementById('wallet-selector');
+        if (walletSelector) {
+            const selectedWallet = walletSelector.value;
+            console.log('用户选择的钱包:', selectedWallet);
+            
+            if (selectedWallet === 'okx' && typeof window.okxwallet !== 'undefined') {
+                console.log('✅ 使用用户选择的OKX Wallet');
+                return window.okxwallet;
+            }
+            
+            if (selectedWallet === 'metamask' && typeof window.ethereum !== 'undefined') {
+                console.log('✅ 使用用户选择的MetaMask');
+                return window.ethereum;
+            }
+        }
+        
+        // 如果没有选择或选择自动，按优先级检测
+        if (typeof window.okxwallet !== 'undefined') {
+            console.log('✅ 自动检测到OKX Wallet');
+            return window.okxwallet;
+        }
+        
+        if (typeof window.ethereum !== 'undefined') {
+            if (window.ethereum.isMetaMask) {
+                console.log('✅ 自动检测到MetaMask');
+                return window.ethereum;
+            }
+            console.log('✅ 自动检测到其他兼容钱包');
+            return window.ethereum;
+        }
+        
+        console.log('❌ 未检测到可用钱包');
+        return null;
+    }
+
+    async checkAndSwitchNetwork(walletProvider) {
         try {
-            const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+            const chainId = await walletProvider.request({ method: 'eth_chainId' });
             console.log('当前连接的网络Chain ID:', chainId);
             
             // Reddio测试网的Chain ID
@@ -61,7 +106,7 @@ class MintingModule {
                 
                 try {
                     // 尝试切换到Reddio测试网
-                    await window.ethereum.request({
+                    await walletProvider.request({
                         method: 'wallet_switchEthereumChain',
                         params: [{ chainId: reddioChainId }],
                     });
@@ -71,14 +116,14 @@ class MintingModule {
                     
                     // 如果网络不存在，尝试添加
                     try {
-                        await window.ethereum.request({
+                        await walletProvider.request({
                             method: 'wallet_addEthereumChain',
                             params: [{
                                 chainId: reddioChainId,
                                 chainName: 'Reddio Testnet',
                                 nativeCurrency: {
-                                    name: 'ETH',
-                                    symbol: 'ETH',
+                                    name: 'RDO',
+                                    symbol: 'RDO',
                                     decimals: 18
                                 },
                                 rpcUrls: ['https://reddio-dev.reddio.com'],
@@ -164,6 +209,12 @@ class MintingModule {
         const mintAmount = document.getElementById('mint-amount');
         if (mintAmount) {
             mintAmount.addEventListener('input', () => this.onMintAmountChange());
+        }
+
+        // 钱包选择器变化
+        const walletSelector = document.getElementById('wallet-selector');
+        if (walletSelector) {
+            walletSelector.addEventListener('change', () => this.onWalletChange());
         }
     }
 
@@ -386,7 +437,7 @@ class MintingModule {
                 .stakeToken(tokenAddress, amountWei)
                 .send({ from: this.userAddress });
             
-            this.showMessage(`成功质押 ${amount} ${tokenSymbol} 到 ${protocol}`, 'success');
+            this.showMessage(`成功质押 ${amount} ${tokenSymbol} 到 Denom`, 'success');
             console.log('质押交易成功:', result);
             
             // 刷新数据
@@ -569,6 +620,24 @@ class MintingModule {
             const mintableAmount = this.getMintableAmount();
             mintBtn.disabled = !amount || amount <= 0 || amount > mintableAmount;
         }
+    }
+
+    async onWalletChange() {
+        console.log('🔄 钱包选择已更改，重新初始化Web3...');
+        
+        // 重置当前状态
+        this.web3 = null;
+        this.vaultContract = null;
+        this.nusdContract = null;
+        this.userAddress = null;
+        
+        // 重新初始化Web3
+        await this.initializeWeb3();
+        
+        // 重新加载数据
+        await this.loadStakingData();
+        
+        console.log('✅ 钱包切换完成');
     }
 
     getMintableAmount() {
