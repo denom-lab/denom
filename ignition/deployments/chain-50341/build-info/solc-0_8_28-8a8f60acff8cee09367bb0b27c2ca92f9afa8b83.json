@@ -1,0 +1,42 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_28-8a8f60acff8cee09367bb0b27c2ca92f9afa8b83",
+  "solcVersion": "0.8.28",
+  "solcLongVersion": "0.8.28+commit.7893614a",
+  "userSourceNameMap": {
+    "contracts/MockPriceOracle.sol": "project/contracts/MockPriceOracle.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "cancun",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode",
+            "evm.deployedBytecode",
+            "evm.methodIdentifiers",
+            "metadata"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/contracts/IPriceOracle.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.28;\n\ninterface IPriceOracle {\n    /**\n     * @dev Returns the price of a token in USD (with 8 decimals)\n     * @param token The address of the token\n     * @return price The price of the token in USD\n     */\n    function getPrice(address token) external view returns (uint256 price);\n}\n"
+      },
+      "project/contracts/MockPriceOracle.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.28;\n\nimport \"./IPriceOracle.sol\";\n\ncontract MockPriceOracle is IPriceOracle {\n    mapping(address => uint256) private prices;\n    address public owner;\n\n    event PriceUpdated(address indexed token, uint256 price);\n\n    modifier onlyOwner() {\n        require(msg.sender == owner, \"Only owner can call this function\");\n        _;\n    }\n\n    constructor() {\n        owner = msg.sender;\n    }\n\n    /**\n     * @dev Sets the price of a token (only owner can call)\n     * @param token The address of the token\n     * @param price The price of the token in USD (with 8 decimals)\n     */\n    function setPrice(address token, uint256 price) external onlyOwner {\n        prices[token] = price;\n        emit PriceUpdated(token, price);\n    }\n\n    /**\n     * @dev Returns the price of a token in USD (with 8 decimals)\n     * @param token The address of the token\n     * @return price The price of the token in USD\n     */\n    function getPrice(address token) external view override returns (uint256 price) {\n        price = prices[token];\n        require(price > 0, \"Price not set for this token\");\n    }\n}\n"
+      }
+    }
+  }
+}
