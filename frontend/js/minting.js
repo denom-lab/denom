@@ -114,11 +114,14 @@ class MintingModule {
             );
             
             console.log('合约初始化成功');
+            
         } catch (error) {
             console.error('合约初始化失败:', error);
             this.showMessage('合约初始化失败: ' + error.message, 'error');
         }
     }
+
+
 
     setupEventListeners() {
         // 质押按钮
