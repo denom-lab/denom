@@ -36,7 +36,7 @@ export function Landing() {
           {/* Hero Description */}
           <div className="mb-12 animate-fade-in-delay">
             <p className="text-2xl md:text-3xl text-gray-700 font-light mb-6 leading-relaxed">
-              Next-Generation Decentralized Stablecoin Protocol
+              Next-Generation Decentralized Stock CDP Protocol
             </p>
             <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
               Safely mint NUSD stablecoins through innovative Collateralized
@@ -114,7 +114,7 @@ export function Landing() {
                 Start Your DeFi Journey
               </h2>
               <p className="text-gray-600 mb-6">
-                Connect your wallet to experience the next-generation stablecoin
+                Connect your wallet to experience the next-generation Stock CDP
                 protocol
               </p>
               <div className="transform hover:scale-105 transition-transform duration-200">
